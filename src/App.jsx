@@ -34,7 +34,7 @@ import AllOrders from './pages/admin/AllOrders';
 import AllParcels from './pages/admin/AllParcels';
 import Reports from './pages/admin/Reports';
 import CreateParcel from './pages/merchant/CreateParcel';
-import CreateOrder from './pages/merchant/createOrder';
+import CreateOrder from './pages/merchant/CreateOrder';
 import AssignDriver from './pages/admin/AssignDriver';
 
 const App = () => {

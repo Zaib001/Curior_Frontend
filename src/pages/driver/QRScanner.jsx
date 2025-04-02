@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { QrReader } from 'react-qr-reader';
+import React, { useEffect, useRef, useState } from 'react';
+import { Html5QrcodeScanner } from 'html5-qrcode';
 import { Toaster, toast } from 'react-hot-toast';
 import { saveAs } from 'file-saver';
 import Papa from 'papaparse';
@@ -10,45 +10,64 @@ const QRScanner = () => {
   const [status, setStatus] = useState('Delivered');
   const [scanLogs, setScanLogs] = useState([]);
   const [trackingLocation, setTrackingLocation] = useState(null);
-
+  const scannerRef = useRef(null);
   const scannedSet = useRef(new Set());
   const beepRef = useRef();
 
-  // ✅ Handle Scan
-  const handleScan = async (result) => {
-    const scanned = result?.text;
-    if (!scanned || scannedSet.current.has(scanned)) return;
+  useEffect(() => {
+    const scanner = new Html5QrcodeScanner(
+      'qr-reader',
+      {
+        fps: 10,
+        qrbox: 250,
+        rememberLastUsedCamera: true,
+        showTorchButtonIfSupported: true,
+      },
+      false
+    );
 
-    scannedSet.current.add(scanned);
-    beepRef.current?.play();
-    if (navigator.vibrate) navigator.vibrate(100);
+    scanner.render(
+      async (decodedText) => {
+        if (!decodedText || scannedSet.current.has(decodedText)) return;
 
-    const timestamp = new Date().toLocaleString();
+        scannedSet.current.add(decodedText);
+        beepRef.current?.play();
+        if (navigator.vibrate) navigator.vibrate(100);
 
-    const newLog = { parcelId: scanned, status, timestamp };
+        const timestamp = new Date().toLocaleString();
+        const log = { parcelId: decodedText, status, timestamp };
 
-    try {
-      // ✅ Update Parcel Status via API
-      await updateParcelStatus(scanned, status);
-      toast.success(`✅ ${scanned} → ${status}`);
-      setScanLogs(prev => [newLog, ...prev]);
-    } catch (error) {
-      toast.error(`❗ Failed to update status for ${scanned}`);
-    }
-  };
+        try {
+          await updateParcelStatus(decodedText, status);
+          toast.success(`✅ ${decodedText} → ${status}`);
+          setScanLogs((prev) => [log, ...prev]);
+        } catch (err) {
+          toast.error(`❗ Failed to update status for ${decodedText}`);
+        }
+      },
+      (err) => {
+        console.error(err);
+        toast.error('❗ Camera error');
+      }
+    );
 
-  // ✅ Track Location
+    scannerRef.current = scanner;
+
+    return () => {
+      scanner.clear().catch(console.error);
+    };
+  }, [status]);
+
   const handleTrackLocation = async (parcelId) => {
     try {
       const location = await getRealTimeLocation(parcelId);
       setTrackingLocation(location);
       toast.success(`📍 Location fetched for ${parcelId}`);
     } catch (error) {
-      toast.error(`❗ Failed to get location for ${parcelId}`);
+      toast.error('❗ Failed to fetch location');
     }
   };
 
-  // ✅ Export to CSV
   const handleExportCSV = () => {
     const csv = Papa.unparse(scanLogs);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -59,20 +78,11 @@ const QRScanner = () => {
     <div className="max-w-5xl mx-auto p-6 space-y-6 bg-white rounded-xl shadow-card">
       <Toaster position="top-right" />
       <audio ref={beepRef} src="/beep.mp3" preload="auto" />
-
       <h2 className="text-2xl font-bold text-primary">QR Scanner + Scan History</h2>
 
-      {/* Scanner Section */}
       <div className="grid md:grid-cols-2 gap-6">
-        <div className="border aspect-video rounded-lg">
-          <QrReader
-            scanDelay={300}
-            constraints={{ facingMode: 'environment' }}
-            onResult={handleScan}
-            onError={(err) => toast.error('Camera error')}
-            style={{ width: '100%' }}
-          />
-        </div>
+        {/* Scanner */}
+        <div className="border aspect-video rounded-lg" id="qr-reader" />
 
         <div className="space-y-3">
           <label className="text-sm font-medium block">Select Status to Apply</label>
@@ -96,7 +106,7 @@ const QRScanner = () => {
         </div>
       </div>
 
-      {/* Scan Logs Table */}
+      {/* Scan Logs */}
       <div className="mt-10">
         <h3 className="text-lg font-semibold mb-3">Scanned Parcels History</h3>
         <div className="overflow-auto max-h-[300px] rounded-md border bg-white">

@@ -75,37 +75,54 @@ const Parcels = () => {
     URL.revokeObjectURL(url);
   };
 
+
   const handleCSVUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
+  
+    console.log('Selected file:', file);
+  
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: async ({ data }) => {
+        console.log('Parsed data:', data); // ✅ Step 1
+  
         const errors = [];
-
+  
         data.forEach((row, i) => {
           if (!row.trackingId || !row.receiver || !row.address || !row.postcode) {
             errors.push(`❌ Row ${i + 2} is missing required fields.`);
           }
         });
-
+  
         if (errors.length > 0) {
+          console.warn('CSV validation errors:', errors); // ✅ Step 2
           errors.forEach(msg => toast.error(msg));
+          e.target.value = ''; // reset input
           return;
         }
-
+  
         try {
-          await createParcelsBulk(data);
+          const res = await createParcelsBulk(data); // ✅ Step 3
+          console.log('Upload success:', res); // ✅ Step 4
           toast.success('📦 Parcels created!');
           fetchParcels();
-        } catch {
+        } catch (err) {
+          console.error('Upload failed:', err); // ✅ Step 5
           toast.error('Upload failed.');
+        } finally {
+          e.target.value = '';
         }
       },
+      error: (error) => {
+        console.error('Parsing error:', error); // ✅ Step 6
+        toast.error('CSV parsing failed.');
+      }
     });
   };
+  
+
 
   const columns = [
     { header: 'Tracking ID', accessor: 'trackingId' },

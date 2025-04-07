@@ -97,14 +97,15 @@ export const createPickupRequest = async (data) => {
   }
 };
 export const createParcelsBulk = async (data) => {
-  const res = await fetch('/merchant/parcels/bulk', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-    body: JSON.stringify({ parcels: data }),
-  });
-  if (!res.ok) throw new Error('Bulk parcel creation failed');
-  return res.json();
+  try {
+    const res = await apiClient.post('/merchant/parcels/bulk', { parcels: data });
+    return res.data;
+  } catch (err) {
+    console.error('🔴 Bulk Upload Error:', err.response?.data || err.message);
+    throw err;
+  }
 };
+
 
 // Get Pickup Requests API
 export const getPickupRequests = async () => {

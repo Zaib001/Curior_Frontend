@@ -37,6 +37,14 @@ export const getUsers = async () => {
     handleError(error);
   }
 };
+export const getPickupRequests = async () => {
+  try {
+    const res = await apiClient.get('/pickups')
+    return res.data
+  } catch (error) {
+    handleError(error);
+  }
+};
 
 export const deleteUser = async (userId) => {
   try {
@@ -53,17 +61,15 @@ export const deleteUser = async (userId) => {
 export const getParcels = async () => {
   try {
     const response = await apiClient.get('/parcels');
-    console.log('All parcel Response:', response.data); // 👈 Add this
-
     return response.data;
   } catch (error) {
     handleError(error);
   }
 };
 
-export const assignDriver = async (parcelId, driverId) => {
+export const assignDriver = async (data) => {
   try {
-    const response = await apiClient.put(`/${parcelId}/assign`, { driverId });
+    const response = await apiClient.put(`/assign-driver`, JSON.stringify(data));
     return response.data;
   } catch (error) {
     handleError(error);
@@ -233,4 +239,30 @@ export const getAllDrivers = async () => {
 export const assignDriverToParcel = async (parcelId, driverId) => {
   const response = await apiClient.put(`/parcels/${parcelId}/assign-driver`, { driverId });
   return response.data;
+};
+export const deleteParcel = async (parcelId) => {
+  try {
+    const res = await apiClient.delete(`/parcels/${parcelId}`);
+    return res.data;
+  } catch (err) {
+    handleError(err);
+  }
+};
+
+export const updateParcel = async (parcelId, data) => {
+  try {
+    const res = await apiClient.put(`/parcels/${parcelId}`, data);
+    return res.data;
+  } catch (err) {
+    handleError(err);
+  }
+};
+
+export const markParcelReturned = async (parcelId) => {
+  try {
+    const res = await apiClient.patch(`/parcels/${parcelId}/return`);
+    return res.data;
+  } catch (err) {
+    handleError(err);
+  }
 };

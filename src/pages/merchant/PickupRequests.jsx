@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import Select from 'react-select';
 import { createPickupRequest, getPickupRequests, getParcels } from '../../services/api';
 import toast from 'react-hot-toast';
 
 const PickupRequests = () => {
   const [formData, setFormData] = useState({
-    parcelId: '',
+    parcelIds: [],
     pickupDate: '',
     pickupTime: '',
     address: '',
@@ -19,9 +20,9 @@ const PickupRequests = () => {
       try {
         const pickups = await getPickupRequests();
         const parcelRes = await getParcels();
-        console.log(parcelRes)
+        const data = Array.isArray(parcelRes) ? parcelRes : parcelRes.data || [];
         setPickupList(pickups);
-        setParcels(Array.isArray(parcelRes) ? parcelRes : parcelRes.data || []);
+        setParcels(data);
       } catch (error) {
         toast.error('Failed to load data.');
       }
@@ -36,21 +37,34 @@ const PickupRequests = () => {
     }));
   };
 
+  const handleSelectChange = (selectedOptions) => {
+    const ids = selectedOptions.map(opt => opt.value);
+    setFormData(prev => ({ ...prev, parcelIds: ids }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.parcelIds.length === 0) {
+      toast.error('Please select at least one parcel.');
+      return;
+    }
     try {
       await createPickupRequest(formData);
       toast.success('Pickup request submitted!');
-      setFormData({ parcelId: '', pickupDate: '', pickupTime: '', address: '' });
+      setFormData({ parcelIds: [], pickupDate: '', pickupTime: '', address: '' });
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 3000);
-
       const updated = await getPickupRequests();
       setPickupList(updated);
-    } catch (error) {
+    } catch {
       toast.error('Submission failed.');
     }
   };
+
+  const parcelOptions = parcels.map(p => ({
+    value: p._id,
+    label: `${p.trackingId} - ${p.receiver}`,
+  }));
 
   return (
     <div className="space-y-8 max-w-3xl mx-auto">
@@ -64,26 +78,18 @@ const PickupRequests = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Dropdown for Parcel Selection */}
+          {/* Multi Parcel Select */}
           <div>
-            <label className="block text-sm font-medium mb-1">Select Parcel</label>
-            <select
-              name="parcelId"
-              value={formData.parcelId}
-              onChange={handleChange}
-              className="w-full border px-4 py-2 rounded-md shadow-sm text-sm"
-              required
-            >
-              <option value="">-- Choose a Parcel --</option>
-              {parcels.map((parcel) => (
-                <option key={parcel._id} value={parcel._id}>
-                  {parcel.trackingId} - {parcel.receiver}
-                </option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium mb-1">Select Parcels</label>
+            <Select
+              isMulti
+              options={parcelOptions}
+              onChange={handleSelectChange}
+              value={parcelOptions.filter(opt => formData.parcelIds.includes(opt.value))}
+              className="text-sm"
+            />
           </div>
 
-          {/* Date/Time and Address */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Pickup Date</label>
@@ -141,19 +147,23 @@ const PickupRequests = () => {
             <table className="w-full text-sm border-collapse">
               <thead className="bg-gray-100">
                 <tr>
-                  <th className="p-3 text-left font-medium">Parcel ID</th>
+                  <th className="p-3 text-left font-medium">Parcels</th>
                   <th className="p-3 text-left font-medium">Date</th>
                   <th className="p-3 text-left font-medium">Time</th>
                   <th className="p-3 text-left font-medium">Address</th>
                 </tr>
               </thead>
               <tbody>
-                {pickupList.map((request) => (
-                  <tr key={request._id} className="border-t hover:bg-gray-50">
-                    <td className="p-3">{request.parcelId}</td>
-                    <td className="p-3">{request.pickupDate}</td>
-                    <td className="p-3">{request.pickupTime}</td>
-                    <td className="p-3">{request.address}</td>
+                {pickupList.map((req) => (
+                  <tr key={req._id} className="border-t hover:bg-gray-50">
+                    <td className="p-3">
+                      {Array.isArray(req.parcelIds)
+                        ? req.parcelIds.join(', ')
+                        : req.parcelId}
+                    </td>
+                    <td className="p-3">{req.pickupDate}</td>
+                    <td className="p-3">{req.pickupTime}</td>
+                    <td className="p-3">{req.address}</td>
                   </tr>
                 ))}
               </tbody>

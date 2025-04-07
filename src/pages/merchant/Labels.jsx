@@ -1,17 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import Barcode from 'react-barcode';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { getOrders, generateLabel } from '../../services/api';
+import { getOrders } from '../../services/api';
 import toast, { Toaster } from 'react-hot-toast';
 
 const Labels = () => {
   const [orders, setOrders] = useState([]);
   const [selectedOrders, setSelectedOrders] = useState([]);
-  const labelRef = useRef(null);
 
-  // Fetch orders from API
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -32,24 +28,17 @@ const Labels = () => {
     );
   };
 
-  const filtered = orders.filter((order) =>
-    selectedOrders.includes(order._id)
-  );
+  const filtered = orders.filter((order) => selectedOrders.includes(order._id));
 
-  // Download Labels (simulates PDF download per label)
-  const handleDownloadPDF = async () => {
-    try {
-      for (const order of filtered) {
-        await generateLabel(order._id); // call label generator if needed
-        toast.success(`Label generated for ${order.orderId}`);
-      }
-    } catch (error) {
-      toast.error('Failed to generate labels.');
-    }
+  const handlePrint = () => {
+    if (filtered.length === 0) return toast.error('No orders selected to print!');
+    setTimeout(() => {
+      window.print();
+    }, 100); // Small delay to render everything properly
   };
 
   return (
-    <div className="space-y-10 max-w-6xl mx-auto print:bg-white">
+    <div className="space-y-10 max-w-6xl mx-auto print:bg-white print:p-0 p-6">
       <Toaster position="top-right" />
 
       {/* Header */}
@@ -57,10 +46,10 @@ const Labels = () => {
         <h1 className="text-2xl font-bold text-primary">Shipping Labels</h1>
         {filtered.length > 0 && (
           <button
-            onClick={handleDownloadPDF}
+            onClick={handlePrint}
             className="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark text-sm"
           >
-            📥 Download PDF
+            🖨️ Print Labels
           </button>
         )}
       </div>
@@ -89,14 +78,10 @@ const Labels = () => {
       </div>
 
       {/* Labels */}
-      <div
-        className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2 print:gap-4"
-        ref={labelRef}
-      >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2 print:gap-3">
         {filtered.map((order) => (
           <div
             key={order._id}
-            id={`label-${order._id}`}
             className="p-5 rounded-lg border bg-white shadow-md print:shadow-none print:border print:p-4"
           >
             {/* Logo */}
@@ -111,7 +96,7 @@ const Labels = () => {
               <p className="text-sm text-gray-600">{order.shippingAddress}</p>
             </div>
 
-            {/* QR Code & Barcode */}
+            {/* QR & Barcode */}
             <div className="flex justify-between items-center gap-4">
               <div className="flex flex-col items-center">
                 {order.orderId && <QRCodeCanvas value={order.orderId} size={90} />}
@@ -133,7 +118,7 @@ const Labels = () => {
             {/* Footer */}
             <div className="mt-4 text-[11px] text-gray-500 border-t pt-2 flex justify-between">
               <p><strong>Tracking:</strong> {order.orderId}</p>
-              <p><strong>Order ID:</strong> {order._id}</p>
+              <p><strong>ID:</strong> {order._id}</p>
             </div>
           </div>
         ))}

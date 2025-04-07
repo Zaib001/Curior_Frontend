@@ -44,11 +44,10 @@ const Dashboard = () => {
   const revenue = analytics.totalRevenue || 0;
 
   const stats = [
-    { label: 'Total Orders', value: orders.length, icon: <ShoppingCart fontSize="large" />, color: '#3f51b5' },
     { label: 'Parcels In Transit', value: inTransit, icon: <LocalShipping fontSize="large" />, color: '#009688' },
     { label: 'Delivered Parcels', value: delivered, icon: <TrackChanges fontSize="large" />, color: '#4caf50' },
-    { label: 'Total Revenue', value: `$${revenue}`, icon: <Payments fontSize="large" />, color: '#ff9800' },
   ];
+  
 
   return (
     <Box sx={{ p: 4 }}>
@@ -138,49 +137,6 @@ const Dashboard = () => {
           </Card>
         </Grid>
       </Grid>
-
-      {/* Recent Orders */}
-      <Card sx={{ p: 2 }}>
-        <Typography fontWeight={600} mb={2}>Recent Orders</Typography>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-              <TableRow>
-                <TableCell><strong>Order ID</strong></TableCell>
-                <TableCell><strong>Receiver</strong></TableCell>
-                <TableCell><strong>Address</strong></TableCell>
-                <TableCell><strong>Status</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {orders.slice(0, 5).map((row) => (
-                <TableRow key={row.orderId}>
-                  <TableCell>{row.orderId}</TableCell>
-                  <TableCell>{row.customerName || 'N/A'}</TableCell>
-                  <TableCell>{row.shippingAddress || 'N/A'}</TableCell>
-                  <TableCell>
-                    <Typography
-                      sx={{
-                        fontSize: 12,
-                        px: 2,
-                        py: 0.5,
-                        borderRadius: 2,
-                        display: 'inline-block',
-                        backgroundColor:
-                          row.status === 'Delivered' ? '#c8e6c9' :
-                            row.status === 'In Transit' ? '#ffe082' :
-                              '#e0e0e0',
-                      }}
-                    >
-                      {row.status || 'Pending'}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Card>
     </Box>
   );
 };

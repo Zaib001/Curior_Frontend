@@ -63,6 +63,7 @@ export const generateLabel = async (parcelId) => {
 export const getParcels = async () => {
   try {
     const response = await apiClient.get('/merchant/parcels');
+    console.log(response.data)
     return response.data;
   } catch (error) {
     handleError(error);
@@ -94,6 +95,15 @@ export const createPickupRequest = async (data) => {
   } catch (error) {
     handleError(error);
   }
+};
+export const createParcelsBulk = async (data) => {
+  const res = await fetch('/merchant/parcels/bulk', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+    body: JSON.stringify({ parcels: data }),
+  });
+  if (!res.ok) throw new Error('Bulk parcel creation failed');
+  return res.json();
 };
 
 // Get Pickup Requests API

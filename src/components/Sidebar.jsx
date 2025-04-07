@@ -30,15 +30,12 @@ const Sidebar = () => {
 
   // Links based on role
   const linksByRole = {
-    merchant: [
-      { path: '/merchant/dashboard', name: 'Dashboard', icon: <Home /> },
-      { path: '/merchant/orders', name: 'Orders', icon: <FileText /> },
-      { path: '/merchant/parcels', name: 'Parcels', icon: <Truck /> },
-      { path: '/merchant/pickups', name: 'Pickup Requests', icon: <Target /> },
-      { path: '/merchant/createparcel', name: 'Create Parcels', icon: <Truck /> },
-      { path: '/merchant/create-order', name: 'Create Orders', icon: <Truck /> },
-      { path: '/merchant/labels', name: 'Shipping Labels', icon: <BadgeCent /> },
-    ],
+   merchant: [
+  { path: '/merchant/dashboard', name: 'Dashboard', icon: <Home /> },
+  { path: '/merchant/parcels', name: 'Parcels', icon: <Truck /> },
+  { path: '/merchant/pickups', name: 'Pickup Requests', icon: <Target /> },
+  { path: '/merchant/labels', name: 'Shipping Labels', icon: <BadgeCent /> },
+],
     driver: [
       { path: '/driver/dashboard', name: 'Dashboard', icon: <Home /> },
       { path: '/driver/assigned', name: 'Assigned Parcels', icon: <Truck /> },
@@ -49,14 +46,14 @@ const Sidebar = () => {
       { path: '/hub/dashboard', name: 'Dashboard', icon: <Home /> },
       { path: '/hub/status-overview', name: 'Status Overview', icon: <ChartBar /> },
     ],
-    admin: [
-      { path: '/admin/dashboard', name: 'Dashboard', icon: <Home /> },
-      { path: '/admin/users', name: 'Users', icon: <Users /> },
-      { path: '/admin/assigndriver', name: 'Assign Driver', icon: <Users /> },
-      { path: '/admin/all-orders', name: 'All Orders', icon: <FileText /> },
-      { path: '/admin/all-parcels', name: 'All Parcels', icon: <Truck /> },
-      { path: '/admin/reports', name: 'Reports', icon: <ChartBar /> },
-    ],
+ admin: [
+  { path: '/admin/dashboard', name: 'Dashboard', icon: <Home /> },
+  { path: '/admin/users', name: 'Users', icon: <Users /> },
+  { path: '/admin/assigndriver', name: 'Assign Driver', icon: <Users /> },
+  { path: '/admin/all-parcels', name: 'Parcels', icon: <Truck /> }, // ✅ renamed
+  { path: '/admin/reports', name: 'Reports', icon: <ChartBar /> },
+],
+
   };
 
   const links = linksByRole[role] || [];

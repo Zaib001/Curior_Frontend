@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DataTable from '../../components/DataTable';
 import Modal from '../../components/Modal';
 import {
-  getParcels,
+  getAllParcels,
   deleteParcel,
   updateParcel,
   markParcelReturned
@@ -17,6 +17,8 @@ const AllParcels = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedParcel, setSelectedParcel] = useState(null);
   const [formData, setFormData] = useState({});
+  const [page, setPage] = useState(1);
+const [itemsPerPage] = useState(10);
 
   useEffect(() => {
     fetchParcels();
@@ -24,8 +26,8 @@ const AllParcels = () => {
 
   const fetchParcels = async () => {
     try {
-      const res = await getParcels();
-      setParcels(Array.isArray(res) ? res : res.data || []);
+      const res = await getAllParcels(page);
+      setParcels(res);
     } catch {
       toast.error('Failed to fetch parcels.');
     } finally {
@@ -82,10 +84,11 @@ const AllParcels = () => {
     }
   };
 
-  const filteredParcels = parcels.filter((p) =>
+  const filteredParcels = (parcels || []).filter((p) =>
     (!filter || p.currentStatus === filter) &&
     (!search || p.trackingId.toLowerCase().includes(search.toLowerCase()) || p.receiver.toLowerCase().includes(search.toLowerCase()))
   );
+
 
   const getBadge = (status) => {
     const base = 'px-3 py-1 rounded-full text-xs font-medium ';
@@ -100,11 +103,11 @@ const AllParcels = () => {
   };
 
   const columns = [
-    { header: 'Tracking ID', accessor: 'trackingId' },
-    { header: 'Receiver', accessor: 'receiver' },
+    { header: 'Parcel Reference', accessor: 'trackingId' },
+    { header: 'Recipient Name', accessor: 'receiver' },
     { header: 'Address', accessor: 'address' },
-    { header: 'Phone', accessor: 'phone' },
     { header: 'Postcode', accessor: 'postcode' },
+    { header: 'Phone Number', accessor: 'phone' },
     { header: 'Delivery Type', accessor: 'deliveryType' },
     {
       header: 'Driver',
@@ -123,28 +126,14 @@ const AllParcels = () => {
       header: 'Actions',
       cell: (row) => (
         <div className="flex gap-2 text-xs">
-          <button
-            onClick={() => handleEdit(row)}
-            className="bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200"
-          >
-            Edit
-          </button>
-          <button
-            onClick={() => handleMarkReturned(row._id)}
-            className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200"
-          >
-            Mark Returned
-          </button>
-          <button
-            onClick={() => handleDelete(row._id)}
-            className="bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200"
-          >
-            Delete
-          </button>
+          <button onClick={() => handleEdit(row)} className="bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200">Edit</button>
+          <button onClick={() => handleMarkReturned(row._id)} className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded hover:bg-yellow-200">Mark Returned</button>
+          <button onClick={() => handleDelete(row._id)} className="bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200">Delete</button>
         </div>
-      ),
-    },
+      )
+    }
   ];
+
 
   return (
     <div className="p-6 space-y-6">
@@ -173,7 +162,39 @@ const AllParcels = () => {
         </select>
       </div>
 
-      <DataTable title="All Parcels" columns={columns} data={filteredParcels} />
+      <DataTable
+  title="All Parcels"
+  columns={columns}
+  data={filteredParcels.slice((page - 1) * itemsPerPage, page * itemsPerPage)}
+/>
+<div className="flex justify-between items-center mt-4 text-sm text-gray-600">
+  <span>
+    Showing {(page - 1) * itemsPerPage + 1}–
+    {Math.min(page * itemsPerPage, filteredParcels.length)} of {filteredParcels.length}
+  </span>
+
+  <div className="flex gap-2">
+    <button
+      onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+      disabled={page === 1}
+      className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+    >
+      Prev
+    </button>
+    <button
+      onClick={() =>
+        setPage((prev) =>
+          prev < Math.ceil(filteredParcels.length / itemsPerPage) ? prev + 1 : prev
+        )
+      }
+      disabled={page >= Math.ceil(filteredParcels.length / itemsPerPage)}
+      className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+    >
+      Next
+    </button>
+  </div>
+</div>
+
 
       {/* Edit Parcel Modal */}
       <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Edit Parcel">

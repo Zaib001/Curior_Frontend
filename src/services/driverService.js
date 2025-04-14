@@ -42,26 +42,6 @@ export const getRealTimeLocation = async (parcelId) => {
   }
 };
 
-// ✅ Optimize Route
-export const optimizeRoute = async (parcelIds) => {
-  try {
-    const response = await apiClient.post('/optimize-route', { parcelIds });
-    return response.data;
-  } catch (error) {
-    handleError(error);
-  }
-};
-
-// ✅ Update Parcel Status
-export const updateParcelStatus = async (parcelId, status) => {
-  try {
-    const response = await apiClient.put(`/${parcelId}/status`, { status });
-    return response.data;
-  } catch (error) {
-    handleError(error);
-  }
-};
-
   
   // ✅ Export Data to CSV
   export const exportParcelsToCSV = (data) => {
@@ -86,3 +66,57 @@ export const updateParcelStatus = async (parcelId, status) => {
     document.body.appendChild(link);
     link.click();
   };
+
+  export const getDriverParcels = async () => {
+    try {
+      const res = await apiClient.get('/parcels');
+      return res.data;
+    } catch (error) {
+      handleError(error);
+    }
+  };
+  
+  // ✅ Update parcel status
+  export const updateParcelStatus = async (id, status) => {
+    try {
+      const res = await apiClient.patch(`/parcels/${id}/status`, { status });
+      return res.data;
+    } catch (error) {
+      handleError(error);
+    }
+  };
+  
+  // ✅ Update parcel location
+  export const updateParcelLocation = async (id, location) => {
+    try {
+      const res = await apiClient.patch(`/parcels/${id}/location`, location);
+      return res.data;
+    } catch (error) {
+      handleError(error);
+    }
+  };
+  
+  // ✅ Public parcel tracking info
+  export const getTrackingInfo = async (trackingId) => {
+    try {
+      const res = await apiClient.get(`/track/${trackingId}`);
+      return res.data;
+    } catch (error) {
+      console.log(error)
+      handleError(error);
+    }
+  };
+  export const optimizeRoute = async (parcels) => {
+    const res = await fetch('https://curior-backend.onrender.com/api/driver/optimize-route', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`,
+      },
+      body: JSON.stringify({ parcels }),
+    });
+  
+    if (!res.ok) throw new Error('Failed to optimize route');
+    return res.json();
+  };
+  

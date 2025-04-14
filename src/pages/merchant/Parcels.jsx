@@ -15,6 +15,10 @@ const Parcels = () => {
   const [filterM25, setFilterM25] = useState(false);
   const [search, setSearch] = useState('');
   const fileInputRef = useRef();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+
 
   useEffect(() => {
     fetchParcels();
@@ -79,32 +83,56 @@ const Parcels = () => {
   const handleCSVUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-  
+
     console.log('Selected file:', file);
-  
+
     Papa.parse(file, {
       header: true,
       skipEmptyLines: true,
       complete: async ({ data }) => {
-        console.log('Parsed data:', data); // ✅ Step 1
-  
+        console.log('Parsed data:', data);
+
         const errors = [];
-  
-        data.forEach((row, i) => {
-          if (!row.trackingId || !row.receiver || !row.address || !row.postcode) {
-            errors.push(`❌ Row ${i + 2} is missing required fields.`);
-          }
-        });
-  
+
+        // Step 1: Defensive validation
+        const validParcels = data
+          .map((row, i) => {
+            const trackingId = row['Parcel Reference']?.trim();
+            const receiver = row['Recipient Name']?.trim();
+            const address = `${row['Address Line 1']?.trim() || ''} ${row['Address Line 2']?.trim() || ''}, ${row['City']?.trim() || ''}`;
+            const postcode = row['Postcode']?.trim();
+            const phone = row['Phone Number']?.trim() || '';
+            const deliveryType = 'Standard';
+            const notes = row['Product Notes']?.trim() || '';
+
+            if (!trackingId || !receiver || !address || !postcode) {
+              errors.push(`❌ Row ${i + 2} is missing required fields.`);
+              return null;
+            }
+
+            return {
+              trackingId,
+              receiver,
+              address,
+              postcode,
+              phone,
+              deliveryType,
+              productNotes: notes,
+            };
+          })
+          .filter(Boolean); // remove nulls
+
+
         if (errors.length > 0) {
           console.warn('CSV validation errors:', errors); // ✅ Step 2
           errors.forEach(msg => toast.error(msg));
           e.target.value = ''; // reset input
           return;
         }
-  
+
         try {
-          const res = await createParcelsBulk(data); // ✅ Step 3
+          console.log("total data", validParcels)
+          const res = await await createParcelsBulk(validParcels);
           console.log('Upload success:', res); // ✅ Step 4
           toast.success('📦 Parcels created!');
           fetchParcels();
@@ -121,13 +149,14 @@ const Parcels = () => {
       }
     });
   };
-  
-
 
   const columns = [
-    { header: 'Tracking ID', accessor: 'trackingId' },
-    { header: 'Receiver', accessor: 'receiver' },
+    { header: 'Parcel Reference', accessor: 'trackingId' },
+    { header: 'Recipient Name', accessor: 'receiver' },
     { header: 'Address', accessor: 'address' },
+    { header: 'Postcode', accessor: 'postcode' },
+    { header: 'Phone Number', accessor: 'phone' },
+    { header: 'Delivery Type', accessor: 'deliveryType' },
     {
       header: 'M25 Zone',
       cell: (row) => (
@@ -138,9 +167,19 @@ const Parcels = () => {
     },
     {
       header: 'Status',
-      cell: (row) => <span className={getBadge(row.currentStatus)}>{row.currentStatus}</span>,
+      cell: (row) => (
+        <span className={getBadge(row.currentStatus)}>
+          {row.currentStatus || 'Created'}
+        </span>
+      ),
     },
   ];
+
+  const paginatedParcels = filteredParcels.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
 
   return (
     <div className="space-y-6">
@@ -178,7 +217,32 @@ const Parcels = () => {
         </div>
       </div>
 
-      <DataTable title="Parcels" columns={columns} data={filteredParcels} onRowClick={setSelectedParcel} />
+      <DataTable title="Parcels" columns={columns} data={paginatedParcels} onRowClick={setSelectedParcel} />
+      <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
+        <span>
+          Showing {(currentPage - 1) * itemsPerPage + 1}–
+          {Math.min(currentPage * itemsPerPage, filteredParcels.length)} of {filteredParcels.length}
+        </span>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <button
+            onClick={() =>
+              setCurrentPage(prev => (prev * itemsPerPage < filteredParcels.length ? prev + 1 : prev))
+            }
+            disabled={currentPage * itemsPerPage >= filteredParcels.length}
+            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
 
       <Modal isOpen={!!selectedParcel} onClose={() => setSelectedParcel(null)} title={`Parcel: ${selectedParcel?.trackingId}`}>
         {selectedParcel && (

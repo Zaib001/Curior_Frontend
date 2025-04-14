@@ -96,15 +96,17 @@ export const createPickupRequest = async (data) => {
     handleError(error);
   }
 };
-export const createParcelsBulk = async (data) => {
+// FIXED ✅
+export const createParcelsBulk = async (parcels) => {
   try {
-    const res = await apiClient.post('/merchant/parcels/bulk', { parcels: data });
+    const res = await apiClient.post('/merchant/parcels/bulk', parcels);
     return res.data;
   } catch (err) {
     console.error('🔴 Bulk Upload Error:', err.response?.data || err.message);
     throw err;
   }
 };
+
 
 
 // Get Pickup Requests API

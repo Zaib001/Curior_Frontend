@@ -36,6 +36,8 @@ import Reports from './pages/admin/Reports';
 import CreateParcel from './pages/merchant/CreateParcel';
 import CreateOrder from './pages/merchant/CreateOrder';
 import AssignDriver from './pages/admin/AssignDriver';
+import TrackParcel from './pages/driver/TrackParcel';
+import DriverLiveMap from './pages/driver/DriverLiveMap';
 
 const App = () => {
   return (
@@ -64,6 +66,8 @@ const App = () => {
           <Route path="assigned" element={<AssignedParcels />} />
           <Route path="status" element={<UpdateStatus />} />
           <Route path="scanner" element={<QRScanner />} />
+          <Route path="track" element={<TrackParcel />} />
+          <Route path="map" element={<DriverLiveMap />} />
         </Route>
         {/* hub routes */}
         <Route path="/hub" element={<HubLayout />}>

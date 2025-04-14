@@ -39,8 +39,9 @@ const Sidebar = () => {
     driver: [
       { path: '/driver/dashboard', name: 'Dashboard', icon: <Home /> },
       { path: '/driver/assigned', name: 'Assigned Parcels', icon: <Truck /> },
-      { path: '/driver/status', name: 'Update Status', icon: <FileText /> },
+      { path: '/driver/track', name: 'Track Parcels', icon: <FileText /> },
       { path: '/driver/scanner', name: 'QR Scanner', icon: <Target /> },
+      // { path: '/driver/map', name: 'Live Map', icon: <Target /> },
     ],
     hub_staff: [
       { path: '/hub/dashboard', name: 'Dashboard', icon: <Home /> },

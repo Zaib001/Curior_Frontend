@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  getAssignedParcels,
+  getDriverParcels,
   updateParcelStatus,
   getRealTimeLocation,
   exportParcelsToCSV
@@ -16,7 +16,7 @@ const AssignedParcels = () => {
   useEffect(() => {
     const fetchParcels = async () => {
       try {
-        const data = await getAssignedParcels();
+        const data = await getDriverParcels();
         setParcels(data);
       } catch (err) {
         setError('Failed to fetch assigned parcels');
@@ -110,7 +110,6 @@ const AssignedParcels = () => {
         <table className="w-full text-sm border-collapse">
           <thead className="bg-gray-100">
             <tr>
-              <th className="p-3 text-left font-medium">Parcel ID</th>
               <th className="p-3 text-left font-medium">Tracking ID</th>
               <th className="p-3 text-left font-medium">Receiver</th>
               <th className="p-3 text-left font-medium">Address</th>
@@ -121,7 +120,6 @@ const AssignedParcels = () => {
           <tbody>
             {filteredParcels.map((parcel) => (
               <tr key={parcel.id} className="border-t hover:bg-gray-50">
-                <td className="p-3">{parcel.id}</td>
                 <td className="p-3">{parcel.trackingId}</td>
                 <td className="p-3">{parcel.receiver}</td>
                 <td className="p-3">{parcel.address}</td>

@@ -1,101 +1,155 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Box, Grid, Typography, Card, CardContent, Table, TableBody,
-  TableCell, TableContainer, TableHead, TableRow, Paper
-} from '@mui/material';
-import {
-  LocalShipping, Done, PendingActions
-} from '@mui/icons-material';
-import { BarChart } from '@mui/x-charts/BarChart';
+  getDriverParcels,
+  updateParcelStatus,
+  updateParcelLocation
+} from '../../services/driverService';
+import toast from 'react-hot-toast';
 
-const stats = [
-  { label: 'Assigned Parcels', value: 25, icon: <LocalShipping fontSize="large" />, color: '#2196f3' },
-  { label: 'Picked Up', value: 15, icon: <PendingActions fontSize="large" />, color: '#ff9800' },
-  { label: 'Delivered', value: 10, icon: <Done fontSize="large" />, color: '#4caf50' },
-];
+const statusOptions = ['Picked Up', 'In Transit', 'Delivered', 'Returned'];
 
-const parcels = [
-  { id: 'PCL001', receiver: 'John Doe', address: 'New York', status: 'Assigned' },
-  { id: 'PCL002', receiver: 'Jane Smith', address: 'Los Angeles', status: 'Picked Up' },
-  { id: 'PCL003', receiver: 'Mike Johnson', address: 'Miami', status: 'Delivered' },
-  { id: 'PCL004', receiver: 'Sarah Lee', address: 'Chicago', status: 'Assigned' },
-];
+const getBadge = (status) => {
+  const base = 'px-2 py-1 rounded-full text-xs font-medium ';
+  switch (status) {
+    case 'Picked Up': return base + 'bg-blue-100 text-blue-700';
+    case 'In Transit': return base + 'bg-yellow-100 text-yellow-700';
+    case 'Delivered': return base + 'bg-green-100 text-green-700';
+    case 'Returned': return base + 'bg-red-100 text-red-700';
+    case 'Created': return base + 'bg-gray-100 text-gray-600';
+    default: return base + 'bg-gray-200 text-gray-600';
+  }
+};
 
 const DriverDashboard = () => {
+  const [parcels, setParcels] = useState([]);
+  const [updatingStatus, setUpdatingStatus] = useState({}); // parcelId → new status
+  const [updatingLocation, setUpdatingLocation] = useState(false);
+
+  useEffect(() => {
+    fetchParcels();
+  }, []);
+
+  const fetchParcels = async () => {
+    try {
+      const res = await getDriverParcels();
+      setParcels(res);
+    } catch {
+      toast.error('Failed to load assigned parcels');
+    }
+  };
+
+  const handleStatusChange = (parcelId, status) => {
+    setUpdatingStatus((prev) => ({ ...prev, [parcelId]: status }));
+  };
+
+  const handleUpdateStatus = async (parcelId) => {
+    const status = updatingStatus[parcelId];
+    if (!status) return toast.error('Please select a status');
+
+    try {
+      await updateParcelStatus(parcelId, status);
+      toast.success('Status updated');
+      fetchParcels();
+      setUpdatingStatus((prev) => ({ ...prev, [parcelId]: '' }));
+    } catch {
+      toast.error('Status update failed');
+    }
+  };
+
+  const handleUpdateLocation = async (parcelId) => {
+    if (!navigator.geolocation) {
+      return toast.error('Geolocation not supported');
+    }
+
+    setUpdatingLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        try {
+          await updateParcelLocation(parcelId, { lat: latitude, lng: longitude });
+          toast.success('Location updated');
+        } catch {
+          toast.error('Failed to update location');
+        } finally {
+          setUpdatingLocation(false);
+        }
+      },
+      (err) => {
+        toast.error('Location fetch failed');
+        setUpdatingLocation(false);
+      }
+    );
+  };
+
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h5" fontWeight={600} mb={3}>Driver Dashboard</Typography>
+    <div className="p-6 space-y-6">
+      <h2 className="text-2xl font-bold text-primary">Driver Dashboard</h2>
 
-      {/* Summary Cards */}
-      <Grid container spacing={3} mb={4}>
-        {stats.map((card, i) => (
-          <Grid item xs={12} sm={4} key={i}>
-            <Card sx={{ display: 'flex', alignItems: 'center', p: 2, backgroundColor: card.color, color: '#fff', borderRadius: 3, boxShadow: 3 }}>
-              <Box mr={2}>{card.icon}</Box>
-              <Box>
-                <Typography variant="h6">{card.value}</Typography>
-                <Typography variant="body2" sx={{ opacity: 0.85 }}>{card.label}</Typography>
-              </Box>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
-      {/* Bar Chart */}
-      <Card sx={{ mb: 4, p: 2 }}>
-        <Typography fontWeight={600} mb={2}>Parcel Status Overview</Typography>
-        <BarChart
-          height={300}
-          series={[
-            { data: [10, 15, 25], label: 'Parcels' }
-          ]}
-          xAxis={[{ scaleType: 'band', data: ['Delivered', 'Picked Up', 'Assigned'] }]}
-        />
-      </Card>
-
-      {/* Assigned Parcels Table */}
-      <Card sx={{ p: 2 }}>
-        <Typography fontWeight={600} mb={2}>Assigned Parcels</Typography>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
-              <TableRow>
-                <TableCell><strong>Parcel ID</strong></TableCell>
-                <TableCell><strong>Receiver</strong></TableCell>
-                <TableCell><strong>Address</strong></TableCell>
-                <TableCell><strong>Status</strong></TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {parcels.map((row) => (
-                <TableRow key={row.id}>
-                  <TableCell>{row.id}</TableCell>
-                  <TableCell>{row.receiver}</TableCell>
-                  <TableCell>{row.address}</TableCell>
-                  <TableCell>
-                    <Typography
-                      sx={{
-                        fontSize: 12,
-                        px: 2,
-                        py: 0.5,
-                        borderRadius: 2,
-                        display: 'inline-block',
-                        backgroundColor:
-                          row.status === 'Delivered' ? '#c8e6c9' :
-                          row.status === 'Picked Up' ? '#ffe082' :
-                          '#e3f2fd',
-                      }}
-                    >
-                      {row.status}
-                    </Typography>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Card>
-    </Box>
+      <div className="bg-white rounded shadow overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="p-3 text-left">Tracking ID</th>
+              <th className="p-3 text-left">Recipient</th>
+              <th className="p-3 text-left">Address</th>
+              <th className="p-3 text-left">Phone</th>
+              <th className="p-3 text-left">Status</th>
+              <th className="p-3 text-left">Update Status</th>
+              <th className="p-3 text-left">Update Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            {parcels.map((p) => (
+              <tr key={p._id} className="border-t">
+                <td className="p-3">{p.trackingId}</td>
+                <td className="p-3">{p.receiver}</td>
+                <td className="p-3">{p.address}</td>
+                <td className="p-3">{p.phone}</td>
+                <td className="p-3">
+                  <span className={getBadge(p.currentStatus)}>{p.currentStatus}</span>
+                </td>
+                <td className="p-3 flex gap-2">
+                  <select
+                    value={updatingStatus[p._id] || ''}
+                    onChange={(e) => handleStatusChange(p._id, e.target.value)}
+                    className="border px-2 py-1 rounded text-sm"
+                  >
+                    <option value="">-- Select --</option>
+                    {statusOptions.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={() => handleUpdateStatus(p._id)}
+                    className="bg-primary text-white px-3 py-1 rounded text-sm hover:bg-primary-dark"
+                  >
+                    Update
+                  </button>
+                </td>
+                <td className="p-3">
+                  <button
+                    onClick={() => handleUpdateLocation(p._id)}
+                    disabled={updatingLocation}
+                    className="bg-gray-200 px-3 py-1 rounded text-sm hover:bg-gray-300 disabled:opacity-50"
+                  >
+                    {updatingLocation ? 'Updating...' : 'Update Location'}
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {parcels.length === 0 && (
+              <tr>
+                <td colSpan="7" className="text-center py-4 text-gray-400">
+                  No assigned parcels
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 };
 
